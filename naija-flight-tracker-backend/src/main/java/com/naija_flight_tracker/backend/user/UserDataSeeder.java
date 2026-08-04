@@ -2,6 +2,7 @@ package com.naija_flight_tracker.backend.user;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -9,9 +10,11 @@ import org.springframework.stereotype.Component;
 public class UserDataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserDataSeeder(UserRepository userRepository) {
+    public UserDataSeeder(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -20,8 +23,13 @@ public class UserDataSeeder implements CommandLineRunner {
             return;
         }
 
+        // A real, working demo login: email adaeze@example.com / password "password123".
         // Matches the hardcoded "Adaeze O." user shown elsewhere in the frontend
         // (Home's greeting, ResultsDesktop's account pill).
-        userRepository.save(new User("adaeze", "Adaeze O."));
+        userRepository.save(new User(
+                "adaeze",
+                "adaeze@example.com",
+                passwordEncoder.encode("password123"),
+                "Adaeze O."));
     }
 }
