@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 public class User {
 
     @Id
-    private String id; // e.g. "adaeze"
+    private String id; // e.g. "adaeze" — plain assigned id, not generated
 
     private String name; // e.g. "Adaeze O."
 
