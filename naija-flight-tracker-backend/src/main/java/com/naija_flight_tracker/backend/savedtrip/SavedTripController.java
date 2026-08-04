@@ -1,6 +1,10 @@
 package com.naija_flight_tracker.backend.savedtrip;
 
+import com.naija_flight_tracker.backend.alert.AlertRepository;
 import com.naija_flight_tracker.backend.common.ApiResponse;
+import com.naija_flight_tracker.backend.flight.Flight;
+import com.naija_flight_tracker.backend.flight.FlightRepository;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,22 +12,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-// Just the single-route lookup the Tracker page needs (e.g. "is LOS->ABV being
-// tracked, and at what target price?"). A "list all my saved trips" endpoint would
-// be the natural next feature — that's what would feed a full Saved Trips list
-// screen — but nothing needs it yet, so it isn't built.
 @RestController
 @RequestMapping("/saved-trips")
 public class SavedTripController {
 
     private final SavedTripRepository savedTripRepository;
+    private final FlightRepository flightRepository;
+    private final AlertRepository alertRepository;
 
-    public SavedTripController(SavedTripRepository savedTripRepository) {
+    public SavedTripController(SavedTripRepository savedTripRepository,
+                                FlightRepository flightRepository,
+                                AlertRepository alertRepository) {
         this.savedTripRepository = savedTripRepository;
+        this.flightRepository = flightRepository;
+        this.alertRepository = alertRepository;
     }
 
     // e.g. GET /api/v1/saved-trips?from=LOS&to=ABV
-    @GetMapping
+    // params = {"from", "to"} on this mapping is what lets it coexist with the
+    // list endpoint below on the same path — Spring only routes here when both
+    // query params are present, and falls back to the no-params method otherwise.
+    @GetMapping(params = {"from", "to"})
     public ApiResponse<SavedTripResponse> getSavedTrip(
             @RequestParam String from,
             @RequestParam String to) {
@@ -31,5 +40,24 @@ public class SavedTripController {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No saved trip for " + from + " -> " + to));
         return ApiResponse.success("Saved trip fetched successfully", SavedTripResponse.from(trip));
+    }
+
+    // e.g. GET /api/v1/saved-trips — every route being tracked, for the Dashboard.
+    @GetMapping
+    public ApiResponse<List<TrackedTripResponse>> getSavedTrips() {
+        List<TrackedTripResponse> response = savedTripRepository.findAll().stream()
+                .map(trip -> {
+                    List<Flight> flights = flightRepository.findByOriginCodeAndDestinationCode(
+                            trip.getOrigin().getCode(), trip.getDestination().getCode());
+                    Integer currentPrice = flights.stream()
+                            .mapToInt(Flight::getPrice)
+                            .min()
+                            .stream().boxed().findFirst()
+                            .orElse(null);
+                    int alertCount = alertRepository.countBySavedTripId(trip.getId());
+                    return TrackedTripResponse.from(trip, currentPrice, alertCount);
+                })
+                .toList();
+        return ApiResponse.success("Saved trips fetched successfully", response);
     }
 }

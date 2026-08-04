@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AlertRepository extends JpaRepository<Alert, String> {
 
     List<Alert> findAllByOrderByCreatedAtDesc();
+
+    int countBySavedTripId(String savedTripId);
 }

@@ -98,6 +98,22 @@ export async function getSavedTrip(from: string, to: string): Promise<SavedTripD
   return body.data;
 }
 
+// Mirrors com.naija_flight_tracker.backend.savedtrip.TrackedTripResponse.
+export interface TrackedTripDto {
+  id: string;
+  origin: AirportDto;
+  destination: AirportDto;
+  targetPrice: number;
+  currentPrice: number | null; // null when there's no real Flight data for this route yet
+  alertCount: number;
+}
+
+export async function getTrackedTrips(): Promise<TrackedTripDto[]> {
+  const res = await fetch(`${API_BASE_URL}/saved-trips`, { cache: 'no-store' });
+  const body: ApiResponse<TrackedTripDto[]> = await res.json();
+  return body.data;
+}
+
 // Mirrors com.naija_flight_tracker.backend.dailyfare.DailyFareResponse.
 export interface DailyFareDto {
   date: string; // ISO date, e.g. "2026-04-18"
